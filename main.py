@@ -14,12 +14,18 @@ en1 = [(en[i+1]+en[i])/2 for i in range(len(en)-1)]
 
 diff_N = dNdE(N, en)
 
+window = rect_window(((25,100), (-5,5)), 100)
+windowRaDec = Gal2RaDec(window)
 
-dataN = selector(data, (25,100), (-5,5))
+#plt.plot(en[1:], N)
+#plt.show()
 
-for i in dataN.iterrows():
-    # if i[1]['log10(E/GeV)']> 8:
-    #     print(i[1]['RA[deg]'], i[1]['Dec[deg]'],)
-    plt.plot(i[1]['RA[deg]'], i[1]['Dec[deg]'], 'b+')
-plt.show()
+#dataN = selector(data, (25,100), (-5,5))
+
+# for i in dataN.iterrows():
+#     # if i[1]['log10(E/GeV)']> 8:
+#     #     print(i[1]['RA[deg]'], i[1]['Dec[deg]'],)
+#     plt.plot(i[1]['RA[deg]'], i[1]['Dec[deg]'], 'b+')
+# plt.show()
+
 
