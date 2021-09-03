@@ -29,8 +29,8 @@ def selector_rect(data, ra_bounds = (0, 360), dec_bounds = (-90,90), deepcopy_re
                     (dec_bounds[0] < data[lat_name]) & (data[lat_name] < dec_bounds[1])]
 
 
-def selector(data, bounds = ((0,-90),(0, 90),(360, 90),(360, -90)), deepcopy_req = True,
-                  lon_name = 'GaLon', lat_name = 'GaLat', en_name = 'log10(E/GeV)',en_th = 1):
+def selector(data, bounds = ((0,-90),(0, 90),(360, 90),(360, -90)),en_th = 1, deepcopy_req = True,
+                  lon_name = 'GaLon', lat_name = 'GaLat', en_name = 'log10(E/GeV)'):
     from matplotlib import pyplot as plt
     area = Polygon(bounds)
     x,y = area.exterior.xy
@@ -52,30 +52,55 @@ def Gal2RaDec(points):
     return np.array(res)
 
 
-def RaDec2Gal(points):
-    res = []
-    for i in points:
-        point = SkyCoord(i[0] * u.deg, i[1] * u.deg, frame='icrs').transform_to(Galactic())
-        res.append((point.l.degree, point.b.degree))
-    return np.array(res)
+def RaDec2Gal(points, out_of_bounds_fix):
+    if not out_of_bounds_fix:
+        res = []
+        for i in points:
+            point = SkyCoord(i[0] * u.deg, i[1] * u.deg, frame='icrs').transform_to(Galactic())
+            res.append((point.l.degree, point.b.degree))
+        return np.array(res)
+    else:
+        res1 = []
+        res2 = []
+        gal_points = []
+        flag = 1
+        old_point = SkyCoord(points[0][0] * u.deg, points[0][1] * u.deg, frame='icrs').transform_to(Galactic())
+        for i in points:
+            point = SkyCoord(i[0] * u.deg, i[1] * u.deg, frame='icrs').transform_to(Galactic())
+            if abs(old_point.l.degree-point.l.degree) > 300:
+                flag = (flag*2)%3
+            if flag == 1:
+                res1.append((point.l.degree, point.b.degree))
+            if flag == 2:
+                res2.append((point.l.degree, point.b.degree))
+            old_point = point
+        # gal_points= np.array(gal_points)
+        # span = max(gal_points[:,0])- min(gal_points[:,0])
+        # for i in gal_points:
+        #     if point.l.degree > 360:
+        #         res1.append((point.l.degree, point.b.degree))
+        #     else:
+        #         res2.append((point.l.degree, point.b.degree))
+        if len(res2) >0:
+            res2.append(res2[-1])
+            return [np.array(res1), np.array(res2)]
+        else:
+            return [np.array(res1)]
 
 
-def window_shift(win,q,out_of_bounds_check = True):
+def window_shift(win,q):
     shift = max(win[:, 0]) - min(win[:,0])
-    if out_of_bounds_check:
-        res_arr = [np.array([((i+shift*k),j) for i,j in win]) for k in range(1, q+1)]
+    return [np.array([((i+shift*k)%360,j) for i,j in win]) for k in range(1, q+1)]
+
+
+def bounds_solver(zone):
         line = LineString([(360,-5), (360,5)])
         new_areas = []
         out_of_bounds_index = []
-        for i, pol in zip(range(q), res_arr):
-            if max(pol[:,0])> 360:
-                area = Polygon(pol)
-                areas = split(area, line)
-                out_of_bounds_index.append(i)
-                new_areas.extend([np.array(list(zip(i.exterior.xy[0],i.exterior.xy[1]))) for i in areas])
-        for i,n in zip(out_of_bounds_index, range(len(out_of_bounds_index))): res_arr.pop(i-n)
-        res_arr.extend(new_areas)
-        for i, pol in zip(range(q), res_arr):
-            if min(pol[:,0])> 360:
-                res_arr[i][:,0] = res_arr[i][:,0] - 360
-    return res_arr
+        area = Polygon(zone)
+        areas = split(area, line)
+        new_areas = [np.array(list(zip(i.exterior.xy[0],i.exterior.xy[1]))) for i in areas]
+        for i, pol in zip(range(len(new_areas)),  new_areas):
+            if min(zone[:,0])> 360:
+                new_areas[i][:,0] = new_areas[i][:,0]%360
+        return new_areas
