@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, LineString
+from shapely.ops import split
 from astropy import units as u
 from astropy.coordinates import SkyCoord, ICRS, Galactic
 
@@ -29,7 +30,7 @@ def selector_rect(data, ra_bounds = (0, 360), dec_bounds = (-90,90), deepcopy_re
 
 
 def selector(data, bounds = ((0,-90),(0, 90),(360, 90),(360, -90)), deepcopy_req = True,
-                  lon_name = 'GaLon', lat_name = 'GaLat', en_name = 'log10(E/GeV)',en_th = 0):
+                  lon_name = 'GaLon', lat_name = 'GaLat', en_name = 'log10(E/GeV)',en_th = 1):
     from matplotlib import pyplot as plt
     area = Polygon(bounds)
     x,y = area.exterior.xy
@@ -59,6 +60,22 @@ def RaDec2Gal(points):
     return np.array(res)
 
 
-def window_shift(win,q):
+def window_shift(win,q,out_of_bounds_check = True):
     shift = max(win[:, 0]) - min(win[:,0])
-    return np.array([((i+shift)%360,j) for i,j in win])
+    if out_of_bounds_check:
+        res_arr = [np.array([((i+shift*k),j) for i,j in win]) for k in range(1, q+1)]
+        line = LineString([(360,-5), (360,5)])
+        new_areas = []
+        out_of_bounds_index = []
+        for i, pol in zip(range(q), res_arr):
+            if max(pol[:,0])> 360:
+                area = Polygon(pol)
+                areas = split(area, line)
+                out_of_bounds_index.append(i)
+                new_areas.extend([np.array(list(zip(i.exterior.xy[0],i.exterior.xy[1]))) for i in areas])
+        for i,n in zip(out_of_bounds_index, range(len(out_of_bounds_index))): res_arr.pop(i-n)
+        res_arr.extend(new_areas)
+        for i, pol in zip(range(q), res_arr):
+            if min(pol[:,0])> 360:
+                res_arr[i][:,0] = res_arr[i][:,0] - 360
+    return res_arr
