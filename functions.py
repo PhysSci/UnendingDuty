@@ -4,6 +4,7 @@ from shapely.geometry import Point, Polygon, LineString
 from shapely.ops import split
 from astropy import units as u
 from astropy.coordinates import SkyCoord, ICRS, Galactic
+import matplotlib.pyplot as plt
 
 def dNdE(N, en):
     res = []
@@ -89,18 +90,93 @@ def RaDec2Gal(points, out_of_bounds_fix):
 
 
 def window_shift(win,q):
-    shift = max(win[:, 0]) - min(win[:,0])
+    shift0 = max(win[:, 0]) - min(win[:, 0])
+    pol = Polygon(win)
+    cuts = []
+    for i in np.linspace(min(win[:, 1]), max(win[:, 1]), 150):
+        line = LineString([(0,i), (360,i)])
+        parts = split(line,pol)
+        if len(parts)>2:
+            cuts.append(parts[1].length)
+    shift = max(max(cuts) + 1, (360-shift0)/q)
+    print(shift, cuts)
     return [np.array([((i+shift*k)%360,j) for i,j in win]) for k in range(1, q+1)]
 
 
+def background_calculator(data, window_bounds,off_zones_number, E = 1,rect = True, rect_interpolation_rate =100, **kwargs):
+    '''
+
+    :param data: data with points to be analized
+    :param window_bounds: if rect is True:bounds of rectangular window. Must be array of 2 tuples ((x1,x2), (y1,y2)).
+    If rect if False: array of tooples each is verticle of polygon [(x1,y1),(x2,y2),...(xn,yn)]
+    :param off_zones_number: number of zones to be used for background calculation
+    :param E: energy treshhold. Any event below E will not be considered
+    :param rect: if True zone is rectangle, else polygon. Consider proper number of points in polygon, because it will
+    undergoo non-linear trasformation
+    :param rect_interpolation_rate: numper of dots each side of rectangle will be split on
+    :param kwargs: key ford arguments for selector.  Check selector function arguments
+    :return: array of integer. First is number of events in window, others - number of events in off zones.
+    '''
+    print(kwargs)
+    window = rect_window(window_bounds, rect_interpolation_rate)
+    windowRaDec = Gal2RaDec(window)
+    off_zones_RaDec = window_shift(windowRaDec, off_zones_number)
+    off_zones = []
+
+    plt.figure(1)
+    plt.plot(windowRaDec[:,0], windowRaDec[:, 1], 'b-', label = 'window')
+    number_of_parts = []
+    for i in off_zones_RaDec:
+        plt.plot(i[:,0], i[:, 1], 'r.', label = 'off-zones')
+        gal_zone = RaDec2Gal(i, True)
+        number_of_parts.extend([len(gal_zone)] + [0]*(len(gal_zone)-1))
+        off_zones.extend(gal_zone)
+    plt.title('Window and off-zones in isrc')
+    plt.legend(loc = 3)
+    plt.show()
+
+    plt.figure(2)
+    plt.plot(window[:,0], window[:, 1], 'b-', label = 'window')
+    sempl = selector(data, window, en_th=E, **kwargs)
+    numbers= [sempl.shape[0]]
+    plt.plot(sempl['GaLon'], sempl['GaLat'], 'g+')
+    plt.text(window[0,0], window[0,1], str(numbers[-1]))
+    sempls = []
+    for i in off_zones:
+        sempls.append(selector(data, i, en_th=E, **kwargs))
+
+    for n,i in enumerate(off_zones):
+        N = 0
+        for j in range(number_of_parts[n]):
+            N = N + sempls[n+j].shape[0]
+        if N:
+            plt.text(i[0,0], i[0,1], str(N))
+            numbers.append(N)
+        plt.plot(sempls[n]['GaLon'], sempls[n]['GaLat'], 'g+')
+        plt.plot(i[:,0], i[:, 1], 'r-', label = 'off-zones')
+    plt.title('Window and off-zones in galactic coordinates')
+    plt.legend(loc = 4)
+    plt.show()
+    numbers = np.array(numbers)
+    background = np.average(numbers[1:])
+    print('number of events in zones ', numbers)
+    print('average background is', background)
+    print('non background events in window', numbers[0] -background)
+    return numbers
+
+
+
+
 def bounds_solver(zone):
-        line = LineString([(360,-5), (360,5)])
-        new_areas = []
-        out_of_bounds_index = []
-        area = Polygon(zone)
-        areas = split(area, line)
-        new_areas = [np.array(list(zip(i.exterior.xy[0],i.exterior.xy[1]))) for i in areas]
-        for i, pol in zip(range(len(new_areas)),  new_areas):
-            if min(zone[:,0])> 360:
-                new_areas[i][:,0] = new_areas[i][:,0]%360
-        return new_areas
+    #finction is obsolet and should not be used
+    pass
+        # line = LineString([(360,-5), (360,5)])
+        # new_areas = []
+        # out_of_bounds_index = []
+        # area = Polygon(zone)
+        # areas = split(area, line)
+        # new_areas = [np.array(list(zip(i.exterior.xy[0],i.exterior.xy[1]))) for i in areas]
+        # for i, pol in zip(range(len(new_areas)),  new_areas):
+        #     if min(zone[:,0])> 360:
+        #         new_areas[i][:,0] = new_areas[i][:,0]%360
+        # return new_areas
