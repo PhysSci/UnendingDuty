@@ -66,7 +66,6 @@ def RaDec2Gal(points, out_of_bounds_fix):
     else:
         res1 = []
         res2 = []
-        gal_points = []
         flag = 1
         old_point = SkyCoord(points[0][0] * u.deg, points[0][1] * u.deg, frame='icrs').transform_to(Galactic())
         for i in points:
@@ -78,13 +77,6 @@ def RaDec2Gal(points, out_of_bounds_fix):
             if flag == 2:
                 res2.append((point.l.degree, point.b.degree))
             old_point = point
-        # gal_points= np.array(gal_points)
-        # span = max(gal_points[:,0])- min(gal_points[:,0])
-        # for i in gal_points:
-        #     if point.l.degree > 360:
-        #         res1.append((point.l.degree, point.b.degree))
-        #     else:
-        #         res2.append((point.l.degree, point.b.degree))
         if len(res2) > 0:
             res2.append(res2[-1])
             return [np.array(res1), np.array(res2)]
@@ -121,8 +113,10 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
     :return: array of integer. First is number of events in window, others - number of events in off zones.
     '''
 
-    data = deepcopy(data.loc[data[en_name] > np.log10(E)])
-    window = rect_window(window_bounds, rect_interpolation_rate)
+    data = deepcopy(data.loc[data[en_name] > np.log10(E)]) #deleting points belof required energy
+    if rect:
+        window = rect_window(window_bounds, rect_interpolation_rate)
+    else: windw = window_bounds
     windowRaDec = Gal2RaDec(window)
     off_zones_RaDec = window_shift(windowRaDec, off_zones_number)
     off_zones = []
