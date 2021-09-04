@@ -8,7 +8,7 @@ from functions import *
 
 
 data = pd.read_json('IC_86_VII_galactic.json')
-background_calculator(data, ((25,100), (-5,5)),9, E = 1e3)
+background_calculator(data, ((25,100), (-5,5)),9, E = 2e3)
 
 # en_data = data['log10(E/GeV)']
 # N, en = np.histogram(en_data, bins = 500)

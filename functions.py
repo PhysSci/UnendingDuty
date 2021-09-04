@@ -115,16 +115,16 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
 
     data = deepcopy(data.loc[data[en_name] > np.log10(E)]) #deleting points belof required energy
     if rect:
-        window = rect_window(window_bounds, rect_interpolation_rate)
+        window = rect_window(window_bounds, rect_interpolation_rate) #making rectangular window
     else: window = window_bounds
-    windowRaDec = Gal2RaDec(window)
-    off_zones_RaDec = window_shift(windowRaDec, off_zones_number)
+    windowRaDec = Gal2RaDec(window) #transform window to isrc
+    off_zones_RaDec = window_shift(windowRaDec, off_zones_number) # getting of zones in isrc
     off_zones = []
 
     plt.figure(1)
     plt.plot(windowRaDec[:, 0], windowRaDec[:, 1], 'b-', label='window')
     number_of_parts = []
-    for i in off_zones_RaDec:
+    for i in off_zones_RaDec: #ploting off-zones in isrc and transforming them to galactic ccordinates
         plt.plot(i[:, 0], i[:, 1], 'r.', label='off-zones')
         gal_zone = RaDec2Gal(i, True)
         number_of_parts.extend([len(gal_zone)] + [0] * (len(gal_zone) - 1))
@@ -133,7 +133,7 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
     plt.legend(loc=3)
     plt.show()
 
-    plt.figure(2)
+    plt.figure(2) #plot in galactic coordinates
     plt.plot(window[:, 0], window[:, 1], 'b-', label='window')
     sempl = selector(data, window, en_th=E, **kwargs)
     numbers = [sempl.shape[0]]
