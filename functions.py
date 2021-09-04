@@ -116,7 +116,7 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
     data = deepcopy(data.loc[data[en_name] > np.log10(E)]) #deleting points belof required energy
     if rect:
         window = rect_window(window_bounds, rect_interpolation_rate)
-    else: windw = window_bounds
+    else: window = window_bounds
     windowRaDec = Gal2RaDec(window)
     off_zones_RaDec = window_shift(windowRaDec, off_zones_number)
     off_zones = []
