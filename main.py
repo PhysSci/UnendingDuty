@@ -8,13 +8,29 @@ from functions import *
 
 
 data = pd.read_json('IC_86_VII_galactic.json')
-background_calculator(data, ((25,100), (-5,5)),9, E = 2e3)
+#background_calculator(data, ((25,100), (-5,5)),9, E = 2e3)
 
-# en_data = data['log10(E/GeV)']
-# N, en = np.histogram(en_data, bins = 500)
-# en1 = [(en[i+1]+en[i])/2 for i in range(len(en)-1)]
-#
+bounds = (1e3, 4e4)
+data_x = data.loc[(data['log10(E/GeV)'] > 3) & (data['log10(E/GeV)'] < 4.4)]
+en_data = 10**(selector(data_x, rect_window(((25,100), (-5,5)), 10))['log10(E/GeV)'])
+
+#N, en = np.histogram(en_data, bins = 500)
+#en1 = [(en[i+1]+en[i])/2 for i in range(len(en)-1)]
+N = []
+en = []
+N_clear = []
+for i in np.linspace(bounds[0], bounds[1], 20):
+    N.append(en_data.loc[en_data >i].shape[0])
+    N_clear.append(background_calculator(data, ((25,100), (-5,5)),9, E = i))
+    en.append(i)
+plt.figure(3)
+plt.plot(en, N, 'g-')
+plt.plot(en, N_clear, 'b-')
+# for i, E in enumerate(en1):
+#     if N[i]> 10:
+#         plt.plot(E, N[i], 'k.')
 # diff_N = dNdE(N, en)
+plt.show()
 
 # window = rect_window(((25,100), (-5,5)), 100)
 # windowRaDec = Gal2RaDec(window)

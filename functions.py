@@ -33,12 +33,11 @@ def selector_rect(data, ra_bounds=(0, 360), dec_bounds=(-90, 90), deepcopy_req=T
                     (dec_bounds[0] < data[lat_name]) & (data[lat_name] < dec_bounds[1])]
 
 
-def selector(data, bounds=((0, -90), (0, 90), (360, 90), (360, -90)), en_th=1, deepcopy_req=True,
+def selector(data, bounds=((0, -90), (0, 90), (360, 90), (360, -90)), deepcopy_req=True,
              lon_name='GaLon', lat_name='GaLat'):
     from matplotlib import pyplot as plt
     area = Polygon(bounds)
     x, y = area.exterior.xy
-    plt.plot(x, y, 'r-')
     res_rows = []
     for n, i in data.iterrows():
         if Point(i[lon_name], i[lat_name]).within(area):
@@ -110,7 +109,7 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
     undergoo non-linear trasformation
     :param rect_interpolation_rate: numper of dots each side of rectangle will be split on
     :param kwargs: key ford arguments for selector.  Check selector function arguments
-    :return: array of integer. First is number of events in window, others - number of events in off zones.
+    :return: numberr of events in window with average background subtrakted
     '''
 
     data = deepcopy(data.loc[data[en_name] > np.log10(E)]) #deleting points belof required energy
@@ -135,13 +134,13 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
 
     plt.figure(2) #plot in galactic coordinates
     plt.plot(window[:, 0], window[:, 1], 'b-', label='window')
-    sempl = selector(data, window, en_th=E, **kwargs)
+    sempl = selector(data, window, **kwargs)
     numbers = [sempl.shape[0]]
     plt.plot(sempl['GaLon'], sempl['GaLat'], 'g+')
     plt.text(window[0, 0], window[0, 1], str(numbers[-1]))
     sempls = []
     for i in off_zones:
-        sempls.append(selector(data, i, en_th=E, **kwargs))
+        sempls.append(selector(data, i, **kwargs))
 
     for n, i in enumerate(off_zones):
         N = 0
@@ -160,11 +159,11 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
     print('number of events in zones ', numbers)
     print('average background is', background)
     print('non background events in window', numbers[0] - background)
-    return numbers
+    return numbers[0] - background
 
 
 def bounds_solver(zone):
-    # finction is obsolet and should not be used
+    # function is obsolete and should not be used
     pass
     # line = LineString([(360,-5), (360,5)])
     # new_areas = []
