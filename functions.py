@@ -156,9 +156,9 @@ def background_calculator(data, window_bounds, off_zones_number, E=1, rect=True,
     plt.show()
     numbers = np.array(numbers)
     background = np.average(numbers[1:])
-    print('number of events in zones ', numbers)
-    print('average background is', background)
-    print('non background events in window', numbers[0] - background)
+    # print('number of events in zones ', numbers)
+    # print('average background is', background)
+    # print('non background events in window', numbers[0] - background)
     return numbers[0] - background
 
 

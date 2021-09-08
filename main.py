@@ -1,8 +1,4 @@
-import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
-from astropy import units as u
-from astropy.coordinates import SkyCoord, Galactic
 from functions import *
 
 
